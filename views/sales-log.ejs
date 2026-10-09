@@ -1,0 +1,228 @@
+<%- include('partials/header', { title: 'Sales Log — MedPlus Admin' }) %>
+
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <h3>👑 Admin Panel</h3>
+      <a href="/admin/inventory" class="sidebar-link">📦 Inventory</a>
+      <a href="/sales" class="sidebar-link active">📊 Sales Log</a>
+      <a href="/terminal" class="sidebar-link">🖥️ POS Terminal</a>
+      <a href="/" class="sidebar-link">🏠 Home</a>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h2>📊 Sales Log</h2>
+          <p class="admin-sub">
+            <%= sales.length %> transactions recorded
+          </p>
+        </div>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-body">
+            <div class="stat-val">৳ <%= parseFloat(totalRevenue).toLocaleString() %>
+            </div>
+            <div class="stat-lbl">Total Revenue</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🧾</div>
+          <div class="stat-body">
+            <div class="stat-val">
+              <%= totalOrders %>
+            </div>
+            <div class="stat-lbl">Total Orders</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-body">
+            <div class="stat-val">
+              <%= sales.length %>
+            </div>
+            <div class="stat-lbl">Line Items Sold</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🧑‍⚕️</div>
+          <div class="stat-body">
+            <div class="stat-val">
+              <%= [...new Set(sales.map(s=> s.cashier))].length %>
+            </div>
+            <div class="stat-lbl">Active Cashiers</div>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <% if (sales.length===0) { %>
+          <div class="empty-state">
+            <span>📊</span>
+            <p>No sales recorded yet.</p>
+            <small>Complete a checkout from the POS Terminal to see records here.</small>
+          </div>
+          <% } else { %>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Receipt ID</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Amount</th>
+                  <th>Payment</th>
+                  <th>Cashier</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% sales.forEach(s=> { %>
+                  <tr>
+                    <td><span class="receipt-id">
+                        <%= s.receiptId || s.saleId %>
+                      </span></td>
+                    <td class="date-cell">
+                      <%= new Date(s.saleDate).toLocaleString('en-BD', { dateStyle:'medium', timeStyle:'short' }) %>
+                    </td>
+                    <td>
+                      <div class="customer-cell">
+                        <strong>
+                          <%= s.customerName %>
+                        </strong>
+                        <small>
+                          <%= s.customerAddress %>
+                        </small>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="prod-cell">
+                        <span>
+                          <%= s.emoji || '💊' %>
+                        </span>
+                        <span>
+                          <%= s.productName %>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="qty-cell">
+                      <%= s.quantity %>
+                    </td>
+                    <td class="amount-cell">৳ <%= s.totalAmount.toLocaleString() %>
+                    </td>
+                    <td><span class="pay-tag">
+                        <%= s.paymentMethod || 'Cash' %>
+                      </span></td>
+                    <td><span class="cashier-tag-sm">
+                        <%= s.cashier || '—' %>
+                      </span></td>
+                  </tr>
+                  <% }) %>
+              </tbody>
+            </table>
+            <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function renderSalesTable(sales) {
+      const tbody = document.querySelector('.data-table tbody');
+      const emptyState = document.querySelector('.empty-state');
+      const tableWrap = document.querySelector('.table-wrap');
+
+      if (sales.length === 0) {
+        if (tbody) tbody.closest('table').style.display = 'none';
+        if (!emptyState) {
+          tableWrap.innerHTML = `
+            <div class="empty-state">
+              <span>📊</span>
+              <p>No sales recorded yet.</p>
+              <small>Complete a checkout from the POS Terminal to see records here.</small>
+            </div>`;
+        }
+        return;
+      }
+
+      // If table doesn't exist yet (was empty-state), rebuild it
+      let table = document.querySelector('.data-table');
+      if (!table) {
+        tableWrap.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Receipt ID</th><th>Date</th><th>Customer</th>
+                <th>Product</th><th>Qty</th><th>Amount</th>
+                <th>Payment</th><th>Cashier</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>`;
+        table = document.querySelector('.data-table');
+      }
+      table.style.display = '';
+
+      const tb = table.querySelector('tbody');
+      tb.innerHTML = sales.map(s => `
+        <tr>
+          <td><span class="receipt-id">${s.receiptId || s.saleId}</span></td>
+          <td class="date-cell">${new Date(s.saleDate).toLocaleString('en-BD', { dateStyle:'medium', timeStyle:'short' })}</td>
+          <td>
+            <div class="customer-cell">
+              <strong>${s.customerName}</strong>
+              <small>${s.customerAddress}</small>
+            </div>
+          </td>
+          <td>
+            <div class="prod-cell">
+              <span>${s.emoji || '💊'}</span>
+              <span>${s.productName}</span>
+            </div>
+          </td>
+          <td class="qty-cell">${s.quantity}</td>
+          <td class="amount-cell">৳ ${Number(s.totalAmount).toLocaleString()}</td>
+          <td><span class="pay-tag">${s.paymentMethod || 'Cash'}</span></td>
+          <td><span class="cashier-tag-sm">${s.cashier || '—'}</span></td>
+        </tr>
+      `).join('');
+
+      // Update stats
+      const totalRevenue = sales.reduce((s, i) => s + i.totalAmount, 0);
+      const totalOrders = [...new Set(sales.map(s => s.receiptId))].length;
+      const cashiers = [...new Set(sales.map(s => s.cashier))].length;
+
+      const statVals = document.querySelectorAll('.stat-val');
+      if (statVals[0]) statVals[0].textContent = '৳ ' + parseFloat(totalRevenue).toLocaleString();
+      if (statVals[1]) statVals[1].textContent = totalOrders;
+      if (statVals[2]) statVals[2].textContent = sales.length;
+      if (statVals[3]) statVals[3].textContent = cashiers;
+
+      // Update transaction count
+      const subEl = document.querySelector('.admin-sub');
+      if (subEl) subEl.textContent = `${sales.length} transactions recorded`;
+    }
+
+    async function refreshSales() {
+      try {
+        const res = await fetch('/api/sales');
+        const sales = await res.json();
+        renderSalesTable(sales);
+      } catch (err) {
+        console.error('Sales refresh failed:', err);
+      }
+    }
+
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'REFRESH_DATA') {
+          refreshSales();
+        }
+      } catch (err) {
+        console.error('WS parse error:', err);
+      }
+    };
+  </script>
+
+  <%- include('partials/footer') %>

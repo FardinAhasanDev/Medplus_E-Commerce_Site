@@ -1,0 +1,365 @@
+<%- include('partials/header', { title: 'POS Terminal — MedPlus' }) %>
+
+  <div class="terminal-layout">
+    <div class="terminal-products">
+      <div class="terminal-header">
+        <h2>🖥️ POS Terminal</h2>
+        <div class="terminal-search">
+          <input type="text" id="termSearch" placeholder="Search products…" oninput="filterProducts(this.value)" />
+        </div>
+        <div class="filter-pills" id="filterPills">
+          <button class="filter-pill active" onclick="filterCat('all', this)">All</button>
+          <button class="filter-pill" onclick="filterCat('Tablets', this)">💊 Tablets</button>
+          <button class="filter-pill" onclick="filterCat('Vitamins', this)">🌿 Vitamins</button>
+
+        </div>
+      </div>
+
+      <div class="prod-grid" id="prodGrid">
+        <% products.forEach(p=> { %>
+          <div class="term-prod-card" data-name="<%= p.name.toLowerCase() %>"
+            data-brand="<%= (p.brand || '').toLowerCase() %>" data-cat="<%= (p.category || 'General').toLowerCase() %>"
+            data-sub="<%= (p.sub || '').toLowerCase() %>">
+            <div class="term-prod-img">
+              <% if (p.imagePath) { %>
+                <img src="<%= p.imagePath %>" alt="<%= p.name %>" />
+                <% } else { %>
+                  <span>
+                    <%= p.emoji || '💊' %>
+                  </span>
+                  <% } %>
+                    <span class="mini-badge <%= p.badge === 'Rx' ? 'rx' : '' %>">
+                      <%= p.badge || 'OTC' %>
+                    </span>
+            </div>
+            <div class="term-prod-body">
+              <div class="term-prod-name">
+                <%= p.name %>
+              </div>
+              <div class="term-prod-price">৳ <%= p.price.toLocaleString() %>
+              </div>
+            </div>
+            <form action="/cart/add" method="POST" class="add-form">
+              <input type="hidden" name="productId" value="<%= p.id %>" />
+              <button type="submit" class="term-add-btn">Add to Cart</button>
+            </form>
+          </div>
+          <% }) %>
+      </div>
+      <div class="no-results" id="noResults" style="display:none;">
+        <span>🔍</span>
+        <p>No products match your search.</p>
+      </div>
+    </div>
+
+    <div class="cart-panel">
+      <div class="cart-header">
+        <h3>🛒 Cart <span class="cart-count">
+            <%= cart.length %> item<%= cart.length !==1 ? 's' : '' %>
+          </span></h3>
+        <% if (user) { %>
+          <span class="cashier-tag">
+            <%= user.role==='admin' ? '👑' : '👤' %>
+              <%= user.username %>
+          </span>
+          <% } %>
+      </div>
+
+      <div class="cart-items">
+        <% if (cart.length===0) { %>
+          <div class="cart-empty">
+            <span>🛒</span>
+            <p>Cart is empty</p>
+            <small>Add products from the left</small>
+          </div>
+          <% } else { %>
+            <% cart.forEach(item=> { %>
+              <div class="cart-item">
+                <div class="cart-item-emoji">
+                  <%= item.emoji || '💊' %>
+                </div>
+                <div class="cart-item-info">
+                  <div class="cart-item-name">
+                    <%= item.name %>
+                  </div>
+                  <div class="cart-item-price">৳ <%= item.price.toLocaleString() %> × <%= item.quantity %>
+                  </div>
+                </div>
+                <div class="cart-item-actions">
+                  <form action="/cart/remove" method="POST" style="display:inline">
+                    <input type="hidden" name="productId" value="<%= item.id %>" />
+                    <button type="submit" class="qty-btn minus">−</button>
+                  </form>
+                  <span class="qty-val">
+                    <%= item.quantity %>
+                  </span>
+                  <form action="/cart/add" method="POST" style="display:inline">
+                    <input type="hidden" name="productId" value="<%= item.id %>" />
+                    <button type="submit" class="qty-btn plus">+</button>
+                  </form>
+                  <form action="/cart/remove-all" method="POST" style="display:inline">
+                    <input type="hidden" name="productId" value="<%= item.id %>" />
+                    <button type="submit" class="qty-btn del">🗑</button>
+                  </form>
+                </div>
+                <div class="cart-item-total">৳ <%= (item.price * item.quantity).toLocaleString() %>
+                </div>
+              </div>
+              <% }) %>
+                <% } %>
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-total-row">
+          <span>Subtotal</span><span>৳ <%= cartTotal %></span>
+        </div>
+        <div class="cart-total-row">
+          <span>Delivery</span><span class="free-tag">Free</span>
+        </div>
+        <div class="cart-total-row grand">
+          <span>Total</span><span>৳ <%= cartTotal %></span>
+        </div>
+
+        <% if (cart.length> 0) { %>
+          <button class="btn-checkout" onclick="openCheckoutModal()">Proceed to Checkout</button>
+          <form action="/cart/clear" method="POST">
+            <button type="submit" class="btn-clear">Clear Cart</button>
+          </form>
+          <% } else { %>
+            <button class="btn-checkout" disabled>Proceed to Checkout</button>
+            <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="checkoutModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>💳 Complete Sale</h3>
+        <button class="modal-close" onclick="closeCheckoutModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="order-summary">
+          <div class="summary-row"><span>Items:</span><span>
+              <%= cart.length %>
+            </span></div>
+          <div class="summary-row grand"><span>Total:</span><span>৳ <%= cartTotal %></span></div>
+        </div>
+        <form action="/cart/checkout" method="POST" id="checkoutForm">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" name="customerName" placeholder="Walk-in Customer" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>Delivery Address</label>
+            <input type="text" name="customerAddress" placeholder="Counter / Address" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <select name="paymentMethod" class="form-input">
+              <option value="Cash">💵 Cash On Delivery</option>
+              <option value="Card">💳 Card</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-confirm">✅ Confirm & Complete Sale</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script>
+    const WS_SENDER = "<%= user ? user.username : 'Guest' %>";
+    function filterProducts(q) {
+      const cards = document.querySelectorAll('.term-prod-card');
+      q = q.toLowerCase().trim();
+      let visible = 0;
+      cards.forEach(c => {
+        const match = !q ||
+          c.dataset.name.includes(q) ||
+          (c.dataset.brand && c.dataset.brand.includes(q)) ||
+          (c.dataset.cat && c.dataset.cat.includes(q)) ||
+          (c.dataset.sub && c.dataset.sub.includes(q));
+        c.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      const noRes = document.getElementById('noResults');
+      if (noRes) noRes.style.display = visible === 0 ? 'flex' : 'none';
+    }
+
+    function filterCat(cat, btn) {
+      document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const q = (document.getElementById('termSearch').value || '').toLowerCase().trim();
+      let visible = 0;
+      document.querySelectorAll('.term-prod-card').forEach(c => {
+        const catMatch = (cat === 'all' || c.dataset.cat === cat.toLowerCase());
+        const qMatch = !q ||
+          c.dataset.name.includes(q) ||
+          (c.dataset.brand && c.dataset.brand.includes(q)) ||
+          (c.dataset.cat && c.dataset.cat.includes(q)) ||
+          (c.dataset.sub && c.dataset.sub.includes(q));
+        const show = catMatch && qMatch;
+        c.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      const noRes = document.getElementById('noResults');
+      if (noRes) noRes.style.display = visible === 0 ? 'flex' : 'none';
+    }
+    function openCheckoutModal() { document.getElementById('checkoutModal').classList.add('open'); }
+    function closeCheckoutModal() { document.getElementById('checkoutModal').classList.remove('open'); }
+
+    // --- Real-time refresh functions ---
+    function renderProductGrid(products) {
+      const grid = document.getElementById('prodGrid');
+      grid.innerHTML = products.map(p => `
+        <div class="term-prod-card" data-name="${(p.name || '').toLowerCase()}"
+          data-brand="${(p.brand || '').toLowerCase()}" data-cat="${(p.category || 'General').toLowerCase()}"
+          data-sub="${(p.sub || '').toLowerCase()}">
+          <div class="term-prod-img">
+            ${p.imagePath
+              ? `<img src="${p.imagePath}" alt="${p.name}" />`
+              : `<span>${p.emoji || '💊'}</span>`}
+            <span class="mini-badge ${p.badge === 'Rx' ? 'rx' : ''}">${p.badge || 'OTC'}</span>
+          </div>
+          <div class="term-prod-body">
+            <div class="term-prod-name">${p.name}</div>
+            <div class="term-prod-price">৳ ${Number(p.price).toLocaleString()}</div>
+          </div>
+          <form action="/cart/add" method="POST" class="add-form">
+            <input type="hidden" name="productId" value="${p.id}" />
+            <button type="submit" class="term-add-btn">Add to Cart</button>
+          </form>
+        </div>
+      `).join('');
+      // Re-apply current search/filter
+      const q = (document.getElementById('termSearch').value || '').trim();
+      if (q) filterProducts(q);
+      const activePill = document.querySelector('.filter-pill.active');
+      if (activePill) {
+        const catText = activePill.textContent.trim();
+        if (catText !== 'All') {
+          // Extract category name from pill text (remove emoji)
+          const cat = catText.replace(/^[^\w]+/, '').trim();
+          filterCat(cat, activePill);
+        }
+      }
+    }
+
+    function renderCart(cart) {
+      const cartItems = document.querySelector('.cart-items');
+      const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+      const cartCount = document.querySelector('.cart-count');
+      if (cartCount) cartCount.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+
+      if (cart.length === 0) {
+        cartItems.innerHTML = `
+          <div class="cart-empty">
+            <span>🛒</span>
+            <p>Cart is empty</p>
+            <small>Add products from the left</small>
+          </div>`;
+      } else {
+        cartItems.innerHTML = cart.map(item => `
+          <div class="cart-item">
+            <div class="cart-item-emoji">${item.emoji || '💊'}</div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">${item.name}</div>
+              <div class="cart-item-price">৳ ${Number(item.price).toLocaleString()} × ${item.quantity}</div>
+            </div>
+            <div class="cart-item-actions">
+              <form action="/cart/remove" method="POST" style="display:inline">
+                <input type="hidden" name="productId" value="${item.id}" />
+                <button type="submit" class="qty-btn minus">−</button>
+              </form>
+              <span class="qty-val">${item.quantity}</span>
+              <form action="/cart/add" method="POST" style="display:inline">
+                <input type="hidden" name="productId" value="${item.id}" />
+                <button type="submit" class="qty-btn plus">+</button>
+              </form>
+              <form action="/cart/remove-all" method="POST" style="display:inline">
+                <input type="hidden" name="productId" value="${item.id}" />
+                <button type="submit" class="qty-btn del">🗑</button>
+              </form>
+            </div>
+            <div class="cart-item-total">৳ ${(item.price * item.quantity).toLocaleString()}</div>
+          </div>
+        `).join('');
+      }
+
+      // Update footer totals
+      const totalRows = document.querySelectorAll('.cart-total-row');
+      totalRows.forEach(row => {
+        if (row.classList.contains('grand') || row.querySelector('span:first-child')?.textContent.trim() === 'Subtotal' || row.querySelector('span:first-child')?.textContent.trim() === 'Total') {
+          const valSpan = row.querySelector('span:last-child');
+          if (valSpan && !valSpan.classList.contains('free-tag')) {
+            valSpan.textContent = `৳ ${cartTotal.toFixed(2)}`;
+          }
+        }
+      });
+
+      // Update checkout button state
+      const checkoutBtn = document.querySelector('.btn-checkout');
+      if (checkoutBtn) checkoutBtn.disabled = cart.length === 0;
+
+      // Update modal summary
+      const summaryItems = document.querySelector('.summary-row span:last-child');
+      if (summaryItems) summaryItems.textContent = cart.length;
+      const summaryTotal = document.querySelector('.summary-row.grand span:last-child');
+      if (summaryTotal) summaryTotal.textContent = `৳ ${cartTotal.toFixed(2)}`;
+
+      // Show/hide clear cart button
+      const clearForm = document.querySelector('form[action="/cart/clear"]');
+      if (clearForm) clearForm.style.display = cart.length > 0 ? '' : 'none';
+    }
+
+    async function refreshTerminal() {
+      try {
+        const [productsRes, cartRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/cart')
+        ]);
+        const products = await productsRes.json();
+        const cart = await cartRes.json();
+        renderProductGrid(products);
+        renderCart(cart);
+      } catch (err) {
+        console.error('Refresh failed:', err);
+      }
+    }
+
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'REFRESH_DATA') {
+        refreshTerminal();
+      }
+      if (data.type === 'CHAT_MSG') {
+        appendChat(data.sender, data.message, data.timestamp, data.sender === WS_SENDER);
+      }
+    };
+
+    function toggleChat() { document.getElementById('chatPanel').classList.toggle('open'); }
+
+    function appendChat(sender, message, time, isSelf) {
+      const div = document.createElement('div');
+      div.className = 'chat-msg' + (isSelf ? ' self' : '');
+      div.innerHTML = `<span class="chat-sender">${sender}</span><p>${message}</p><small>${time}</small>`;
+      const box = document.getElementById('chatMessages');
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      ws.send(JSON.stringify({ type: 'CHAT_MSG', sender: WS_SENDER, message: msg }));
+      input.value = '';
+    }
+
+    function handleChatKey(e) { if (e.key === 'Enter') sendChat(); }
+  </script>
+
+  <%- include('partials/footer') %>

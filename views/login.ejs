@@ -1,0 +1,33 @@
+<%- include('partials/header', { title: 'Login — MedPlus' }) %>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo"><a href="/" class="logo"><span class="logo-pill"></span>MedPlus</a></div>
+    <h2>Welcome back</h2>
+    <p class="auth-sub">Sign in to access the pharmacy terminal</p>
+
+    <% if (error) { %>
+      <div class="alert-error">⚠️ <%= error %></div>
+    <% } %>
+
+    <form action="/login" method="POST" class="auth-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" class="form-input" required autofocus placeholder="Enter your username"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" class="form-input" required placeholder="Enter your password"/>
+      </div>
+      <button type="submit" class="btn-confirm">🔑 Sign In</button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="/register">Register here</a>
+    </div>
+
+  
+  </div>
+</div>
+
+<%- include('partials/footer') %>

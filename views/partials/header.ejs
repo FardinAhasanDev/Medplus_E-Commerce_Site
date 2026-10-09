@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= typeof title !=='undefined' ? title : 'MedPlus Pharmacy' %>
+  </title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="/" class="logo"><span class="logo-pill"></span>MedPlus</a>
+
+      <div class="nav-search-wrap">
+        <div class="nav-search">
+          <input type="text" id="globalSearch" placeholder='Search medicines…' autocomplete="off" />
+          <button id="globalSearchBtn">🔍</button>
+        </div>
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+
+      <div class="nav-links">
+        <a href="/" class="nav-link"><span>🏠</span>Home</a>
+        <% if (user) { %>
+          <a href="/terminal" class="nav-link"><span>🛒</span>Cart</a>
+          <% if (user.role==='admin' ) { %>
+            <a href="/admin/inventory" class="nav-link"><span>📦</span>Inventory</a>
+            <a href="/sales" class="nav-link"><span>📊</span>Sales</a>
+            <% } %>
+              <a href="/logout" class="nav-link logout-link"><span>🚪</span>Logout</a>
+              <span class="user-badge">
+                <%= user.role==='admin' ? '👑' : '👤' %>
+                  <%= user.username %>
+              </span>
+              <% } else { %>
+                <a href="/login" class="nav-link"><span>🔑</span>Login</a>
+                <a href="/register" class="nav-link"><span>✍️</span>Register</a>
+                <% } %>
+      </div>
+    </div>
+  </nav>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="/js/app.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      const $globalSearch = $("#globalSearch");
+      const $searchDropdown = $("#searchDropdown");
+      const $searchBtn = $("#globalSearchBtn");
+
+      if ($globalSearch.length && $searchDropdown.length) {
+        const suggestions = ["Paracetamol 500mg", "Vitamin D3"];
+        let idx = 0;
+        setInterval(function () {
+          if (!$globalSearch.is(":focus") && !$globalSearch.val().trim()) {
+
+            $globalSearch.attr(
+              "placeholder",
+              `Try "${suggestions[idx % suggestions.length]}"…`,
+            );
+            idx++;
+          }
+        }, 3000);
+
+        let searchTimer = null;
+        let lastQuery = "";
+        function highlightMatch(text, query) {
+          if (!query) return escapeHtml(text);
+          const escaped = escapeHtml(text);
+          const regex = new RegExp(`(${escapeRegex(query)})`, "gi");
+          return escaped.replace(regex, "<mark>$1</mark>");
+        }
+
+        function escapeHtml(str) {
+          return $("<div>").text(str).html();
+        }
+
+        function escapeRegex(str) {
+          return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+
+
+        function showLoading() {
+          $searchDropdown
+            .html(
+              `                                              
+        <div class="search-dd-loading">
+          <div class="spinner"></div>
+          Searching…
+        </div>
+      `,
+            )
+            .addClass("open");
+        }
+
+        function showEmpty(query) {
+          $searchDropdown
+            .html(
+              `                                              
+        <div class="search-dd-empty">
+          <div class="search-dd-empty-icon">🔍</div>
+          <p>No products found</p>
+          <small>No results for "${escapeHtml(query)}". Try a different keyword.</small>
+        </div>
+      `,
+            )
+            .addClass("open");
+        }
+
+
+        function filterHomeGrid(q) {
+          const $cards = $("#homeProductGrid .product-card");
+          let visible = 0;
+          $cards.each(function () {
+            const match = !q ||
+              ($(this).data("name") || "").includes(q) ||
+              ($(this).data("brand") || "").includes(q) ||
+              ($(this).data("category") || "").includes(q) ||
+              ($(this).data("sub") || "").includes(q);
+            $(this).toggle(match);
+            if (match) visible++;
+          });
+          const $noRes = $("#homeNoResults");
+          $noRes.toggle(visible === 0 && q.length > 0);
+        }
+
+        function renderResults(products, query) {
+          if (!products.length) {
+            showEmpty(query);
+            return;
+          }
+
+          let html = `
+        <div class="search-dd-header">
+          <span>Search Results</span>
+          <span class="search-dd-count">${products.length} found</span>
+        </div>
+      `;
+
+          $.each(products, function (i, p) {
+
+            const emoji = p.imagePath
+              ? `<img src="${escapeHtml(p.imagePath)}" alt="${escapeHtml(p.name)}"/>`
+              : p.emoji || "💊";
+            const badgeClass = p.badge === "Rx" ? "rx" : "";
+            const sub = p.sub
+              ? `<div class="search-dd-sub">${escapeHtml(p.brand || "")} · ${escapeHtml(p.sub)}</div>`
+              : `<div class="search-dd-sub">${escapeHtml(p.brand || p.category || "")}</div>`;
+
+            html += `
+          <div class="search-dd-item" data-id="${escapeHtml(p.id)}">
+            <div class="search-dd-emoji">${p.imagePath ? emoji : emoji}</div>
+            <div class="search-dd-info">
+              <div class="search-dd-name">${highlightMatch(p.name, query)}</div>
+              ${sub}
+            </div>
+            <div class="search-dd-meta">
+              <div class="search-dd-price">৳ ${Number(p.price).toLocaleString()}</div>
+              <div class="search-dd-badge ${badgeClass}">${escapeHtml(p.badge || "OTC")}</div>
+            </div>
+          </div>
+        `;
+          });
+
+          $searchDropdown.html(html).addClass("open");
+
+
+          $searchDropdown.find(".search-dd-item").on("click", function () {
+
+            const productId = $(this).data("id");
+            const $grid = $("#homeProductGrid");
+
+            if ($grid.length) {
+              // On home page — show only the selected product
+              $grid.find(".product-card").hide();
+              const $card = $grid.find(`.product-card[data-product-id="${productId}"]`);
+              $card.show();
+              $("#homeNoResults").hide();
+              $("html, body").animate({ scrollTop: ($card.offset().top - 120) }, 380);
+              $card.removeClass("search-highlight")[0].offsetWidth;
+              $card.addClass("search-highlight");
+            } else {
+              // On other pages — scroll to card
+              const $card = $(`.product-card[data-product-id="${productId}"]`);
+              if ($card.length) {
+                $("html, body").animate(
+                  { scrollTop: $card.offset().top - $(window).height() / 2 + $card.outerHeight() / 2 },
+                  400,
+                );
+                $card.removeClass("search-highlight")[0].offsetWidth;
+                $card.addClass("search-highlight");
+              }
+            }
+
+            closeDropdown();
+            $globalSearch.val("");
+            // Reset home grid when search is cleared
+            if ($grid.length) filterHomeGrid("");
+          });
+        }
+
+
+        function performSearch(query) {
+          if (query === lastQuery) return;
+          lastQuery = query;
+
+          if (!query) {
+            closeDropdown();
+            return;
+          }
+
+          showLoading();
+
+          $.get("/api/search", { q: query })
+            .done(function (products) {
+
+              if ($globalSearch.val().trim().toLowerCase() === query) {
+
+                renderResults(products, query);
+              }
+            })
+            .fail(function () {
+
+              $searchDropdown
+                .html(
+                  `                                          
+            <div class="search-dd-empty">
+              <div class="search-dd-empty-icon">⚠️</div>
+              <p>Search failed</p>
+              <small>Please try again.</small>
+            </div>
+          `,
+                )
+                .addClass("open");
+            });
+        }
+
+        function closeDropdown() {
+          $searchDropdown.removeClass("open");
+          lastQuery = "";
+        }
+
+
+        $globalSearch.on("input", function () {
+
+          const q = $(this).val().trim().toLowerCase();
+          clearTimeout(searchTimer);
+
+          // Live-filter the home page product grid
+          if ($("#homeProductGrid").length) {
+            filterHomeGrid(q);
+          }
+
+          if (!q) {
+            closeDropdown();
+            return;
+          }
+
+          searchTimer = setTimeout(function () {
+            performSearch(q);
+          }, 250);
+        });
+
+
+        $globalSearch.on("keydown", function (e) {
+
+          if (e.key === "Enter") {
+            e.preventDefault();
+            clearTimeout(searchTimer);
+            const q = $(this).val().trim().toLowerCase();
+            if (q) performSearch(q);
+          }
+          if (e.key === "Escape") {
+            closeDropdown();
+            $(this).blur();
+          }
+        });
+
+
+        if ($searchBtn.length) {
+
+          $searchBtn.on("click", function (e) {
+
+            e.preventDefault();
+            clearTimeout(searchTimer);
+            const q = $globalSearch.val().trim().toLowerCase();
+            if (q) performSearch(q);
+          });
+        }
+
+        $(document).on("click", function (e) {
+
+          if (!$(e.target).closest(".nav-search-wrap").length) {
+
+            closeDropdown();
+          }
+        });
+
+
+        $globalSearch.on("focus", function () {
+
+          const q = $(this).val().trim().toLowerCase();
+          if (q && $searchDropdown.children().length > 0) {
+
+            $searchDropdown.addClass("open");
+          }
+        });
+      }
+
+
+      $(".modal-overlay").on("click", function (e) {
+
+        if ($(e.target).is(this)) {
+
+          $(this).removeClass("open");
+        }
+      });
+
+
+      $(document).on("keydown", function (e) {
+
+        if (e.key === "Escape") {
+          $(".modal-overlay.open").removeClass("open");
+        }
+      });
+    });
+
+  </script>
+</body>
+
+</html>

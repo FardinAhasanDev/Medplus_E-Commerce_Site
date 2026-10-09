@@ -1,0 +1,120 @@
+<footer class="site-footer">
+  <div class="footer-info">
+    <div class="footer-col">
+      <p class="footer-tag">It Scholarship Student</p>
+      <p>Fardin Ahasan<br>ID: 1295560<br>Batch: CS/SCSL-A/70/01<br>Email: english.180212033@gmail.com<br>Phone:
+        +8801701740998</p>
+    </div>
+    <div class="footer-col">
+      <p class="footer-tag">Project Consultant</p>
+      <p>Zahidul Hassan<br>Show &amp; Tell Consulting Ltd<br>Email: jewelmir81@gmail.com<br>Phone:
+        +8801535110014</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    &copy; 2026 IsDB-BISEW — All rights reserved &nbsp;·&nbsp; Designed by Fardin Ahasan &nbsp;·&nbsp; ID
+    1295560
+    &nbsp;·&nbsp; Batch CS/SCSL-A/70/01
+  </div>
+</footer>
+
+
+
+<button class="chat-fab" onclick="toggleChat()" id="chatFab" title="MedPlus Chat">
+  <span class="chat-fab-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+    </svg>
+  </span>
+  MedPlus Chat
+</button>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+      </svg>
+      <span>MedPlus Chat</span>
+      <div class="chat-status-dot"></div>
+    </div>
+    <button onclick="toggleChat()" title="Close" aria-label="Close chat">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg">
+      <span class="chat-sender">MedPlus</span>
+      <p>Welcome! How can we help you today?</p>
+      <small>Just now</small>
+    </div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Type a message…" onkeypress="handleChatKey(event)" />
+    <button onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+  const WS_SENDER = typeof WS_SENDER_NAME !== 'undefined' ? WS_SENDER_NAME : 'Guest';
+  function toggleChat() {
+    const panel = document.getElementById('chatPanel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      document.getElementById('chatInput').focus();
+    }
+  }
+
+  function appendChat(sender, message, time, isSelf) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (isSelf ? ' self' : '');
+
+    const senderEl = document.createElement('span');
+    senderEl.className = 'chat-sender';
+    senderEl.textContent = sender;
+
+    const messageEl = document.createElement('p');
+    messageEl.textContent = message;
+
+    const timeEl = document.createElement('small');
+    timeEl.textContent = time;
+
+    div.append(senderEl, messageEl, timeEl);
+
+    const box = document.getElementById('chatMessages');
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    if (typeof ws !== 'undefined' && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'CHAT_MSG', sender: WS_SENDER, message: msg }));
+    } else {
+
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      appendChat(WS_SENDER, msg, time, true);
+    }
+    input.value = '';
+  }
+
+  function handleChatKey(e) { if (e.key === 'Enter') sendChat(); }
+
+  if (typeof ws === 'undefined') {
+    try {
+      const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var ws = new WebSocket(`${wsProtocol}//${location.host}`);
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === 'CHAT_MSG') {
+            appendChat(data.sender, data.message, data.timestamp, data.sender === WS_SENDER);
+          }
+        } catch (err) { }
+      };
+    } catch (err) { }
+  }
+</script>
+</body>
+
+</html>

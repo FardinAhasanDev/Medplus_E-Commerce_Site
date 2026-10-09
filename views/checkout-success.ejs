@@ -1,0 +1,44 @@
+<%- include('partials/header', { title: 'Order Complete — MedPlus' }) %>
+
+  <div class="auth-wrap">
+    <div class="receipt-card">
+      <div class="confetti-icon">🎉</div>
+      <h2>Order Finalized Successfully!</h2>
+      <p class="thank-you-line">Thank you, <strong>
+          <%= customerName %>
+        </strong>!</p>
+
+      <div class="dispatch-box">
+        Dispatching to: <%= customerAddress %>
+      </div>
+
+      <button class="btn-print" onclick="window.print()">🖨️ Print Terminal Receipt</button>
+      <div class="receipt-divider"></div>
+      <div class="check-circle">✓</div>
+      <h3>Transaction Complete</h3>
+      <p class="complete-sub">
+        The checkout pipeline executed successfully.<br />
+        All inventory metrics have been saved to local ledger storage records.
+      </p>
+
+      <div class="receipt-meta">
+        <div class="receipt-row"><span>Receipt ID:</span><strong>
+            <%= receiptId %>
+          </strong></div>
+        <div class="receipt-row"><span>Items Sold:</span><strong>
+            <%= itemCount %>
+          </strong></div>
+        <div class="receipt-row"><span>Total Amount:</span><strong>৳ <%= parseFloat(grandTotal).toLocaleString() %>
+              </strong></div>
+      </div>
+
+      <div class="followup-actions">
+        <a href="/terminal" class="btn-yes">Yes, New Transaction</a>
+        <a href="/logout" class="btn-no">No, Exit & Log Out</a>
+      </div>
+
+      <a href="/sales" class="archive-link">View Archived Sales Invoices ↗</a>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>

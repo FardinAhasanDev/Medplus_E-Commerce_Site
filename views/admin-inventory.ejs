@@ -1,0 +1,287 @@
+<%- include('partials/header', { title: 'Inventory — MedPlus Admin' }) %>
+
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <h3>👑 Admin Panel</h3>
+      <a href="/admin/inventory" class="sidebar-link active">📦 Inventory</a>
+      <a href="/sales" class="sidebar-link">📊 Sales Log</a>
+      <a href="/terminal" class="sidebar-link">🖥️ POS Terminal</a>
+      <a href="/" class="sidebar-link">🏠 Home</a>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h2>📦 Product Inventory</h2>
+          <p class="admin-sub">
+            <%= products.length %> products in catalogue
+          </p>
+        </div>
+        <button class="btn-primary" onclick="openAddModal()">+ Add Product</button>
+      </div>
+
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Badge</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% products.forEach(p=> { %>
+              <tr>
+                <td>
+                  <div class="prod-cell">
+                    <span class="prod-emoji">
+                      <%= p.emoji || '💊' %>
+                    </span>
+                    <span class="prod-cell-name">
+                      <%= p.name %>
+                    </span>
+                  </div>
+                </td>
+                <td><span class="cat-tag">
+                    <%= p.category || '—' %>
+                  </span></td>
+                <td><span class="badge-tag <%= p.badge === 'Rx' ? 'rx' : 'otc' %>">
+                    <%= p.badge || 'OTC' %>
+                  </span></td>
+                <td class="price-cell">৳ <%= p.price.toLocaleString() %>
+                </td>
+                <td><span class="stock-tag <%= p.stock < 30 ? 'low' : '' %>">
+                    <%= p.stock || 0 %>
+                  </span></td>
+                <td class="action-cell">
+                  <button class="btn-edit"
+                    onclick='openEditModal(<%- JSON.stringify(p).replace(/\x27/g, "&#39;") %>)'>✏️ Edit</button>
+                  <button class="btn-del" onclick="deleteProduct('<%= p.id %>')">🗑 Delete</button>
+                </td>
+              </tr>
+              <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>➕ Add New Product</h3>
+        <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form action="/product/create" method="POST" enctype="multipart/form-data">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" name="name" class="form-input" required placeholder="e.g. Paracetamol 500mg" />
+            </div>
+            <div class="form-group">
+              <label>Price (৳) *</label>
+              <input type="number" name="price" class="form-input" required step="0.01" min="0" placeholder="0.00" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select name="category" class="form-input">
+                <option>Tablets</option>
+                <option>Vitamins</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Badge</label>
+              <select name="badge" class="form-input">
+                <option value="OTC">OTC</option>
+                <option value="Rx">Rx</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Emoji Icon</label>
+              <input type="text" name="emoji" class="form-input" placeholder="💊" maxlength="4" />
+            </div>
+            <div class="form-group">
+              <label>Stock Quantity</label>
+              <input type="number" name="stock" class="form-input" min="0" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Product Image (optional)</label>
+            <input type="file" name="productImage" class="form-input" accept="image/*" />
+          </div>
+          <button type="submit" class="btn-confirm">➕ Add Product</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✏️ Edit Product</h3>
+        <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form action="/product/update" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="productId" id="editProductId" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product Name</label>
+              <input type="text" name="name" id="editName" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label>Price (৳)</label>
+              <input type="number" name="price" id="editPrice" class="form-input" required step="0.01" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select name="category" id="editCategory" class="form-input">
+                <option>Tablets</option>
+                <option>Vitamins</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Badge</label>
+              <select name="badge" id="editBadge" class="form-input">
+                <option value="OTC">OTC</option>
+                <option value="Rx">Rx</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Emoji</label>
+              <input type="text" name="emoji" id="editEmoji" class="form-input" maxlength="4" />
+            </div>
+            <div class="form-group">
+              <label>Stock</label>
+              <input type="number" name="stock" id="editStock" class="form-input" min="0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Replace Image (optional)</label>
+            <input type="file" name="productImage" class="form-input" accept="image/*" />
+          </div>
+          <button type="submit" class="btn-confirm">💾 Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- DENIED-->
+  <div class="modal-overlay" id="accessDeniedModal">
+    <div class="modal-box access-denied-box">
+      <div class="access-denied-content">
+        <h3 class="access-denied-title">Access Denied:</h3>
+        <p class="access-denied-msg" id="accessDeniedMsg"></p>
+        <div class="access-denied-actions">
+          <button class="btn-ok"
+            onclick="document.getElementById('accessDeniedModal').classList.remove('open')">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openAddModal() { document.getElementById('addModal').classList.add('open'); }
+
+    function openEditModal(product) {
+      document.getElementById('editProductId').value = product.id;
+      document.getElementById('editName').value = product.name;
+      document.getElementById('editPrice').value = product.price;
+      document.getElementById('editEmoji').value = product.emoji || '💊';
+      document.getElementById('editStock').value = product.stock || 0;
+      const catSel = document.getElementById('editCategory');
+      for (let o of catSel.options) { if (o.value === product.category) { o.selected = true; break; } }
+      const badgeSel = document.getElementById('editBadge');
+      for (let o of badgeSel.options) { if (o.value === product.badge) { o.selected = true; break; } }
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    async function deleteProduct(productId) {
+      if (!confirm('Delete this product?')) return;
+      try {
+        const resp = await fetch('/product/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ productId })
+        });
+        const data = await resp.json();
+        if (!data.success) {
+          const lines = data.message.split('\n').filter(l => l.trim());
+          const bodyText = lines.length > 1 ? lines.slice(1).join('\n') : data.message;
+          document.getElementById('accessDeniedMsg').textContent = bodyText;
+          document.getElementById('accessDeniedModal').classList.add('open');
+        } else {
+          refreshInventory();
+        }
+      } catch (err) {
+        alert('Error deleting product.');
+      }
+    }
+
+    function renderInventoryTable(products) {
+      const tbody = document.querySelector('.data-table tbody');
+      if (!tbody) return;
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td>
+            <div class="prod-cell">
+              <span class="prod-emoji">${p.emoji || '💊'}</span>
+              <span class="prod-cell-name">${p.name}</span>
+            </div>
+          </td>
+          <td><span class="cat-tag">${p.category || '—'}</span></td>
+          <td><span class="badge-tag ${p.badge === 'Rx' ? 'rx' : 'otc'}">${p.badge || 'OTC'}</span></td>
+          <td class="price-cell">৳ ${Number(p.price).toLocaleString()}</td>
+          <td><span class="stock-tag ${p.stock < 30 ? 'low' : ''}">${p.stock || 0}</span></td>
+          <td class="action-cell">
+            <button class="btn-edit"
+              onclick='openEditModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️ Edit</button>
+            <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑 Delete</button>
+          </td>
+        </tr>
+      `).join('');
+      // Update the product count in the topbar
+      const countEl = document.querySelector('.admin-sub');
+      if (countEl) countEl.textContent = `${products.length} products in catalogue`;
+    }
+
+    async function refreshInventory() {
+      try {
+        const res = await fetch('/api/products');
+        const products = await res.json();
+        renderInventoryTable(products);
+      } catch (err) {
+        console.error('Inventory refresh failed:', err);
+      }
+    }
+
+    // WebSocket for real-time updates
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'REFRESH_DATA') {
+          refreshInventory();
+        }
+      } catch (err) {
+        console.error('WS parse error:', err);
+      }
+    };
+  </script>
+
+  <%- include('partials/footer') %>

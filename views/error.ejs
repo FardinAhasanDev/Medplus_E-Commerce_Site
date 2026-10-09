@@ -1,0 +1,12 @@
+<%- include('partials/header', { title: 'Error — MedPlus' }) %>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="font-size:3.5rem;margin-bottom:16px;">⚠️</div>
+    <h2>Access Denied</h2>
+    <p class="auth-sub"><%= message || 'Something went wrong.' %></p>
+    <a href="/" class="btn-confirm" style="margin-top:24px;display:inline-block">← Go Home</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

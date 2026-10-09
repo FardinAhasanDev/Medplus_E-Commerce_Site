@@ -1,0 +1,223 @@
+<%- include('partials/header', { title: 'MedPlus — Your Trusted Online Pharmacy' }) %>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-tag">✦ <span>Licensed Pharmacy</span> · Est. 2026</div>
+        <h1>Medicines delivered to your <em>door in hours.</em></h1>
+        <p>MedPlus brings certified, authentic medicines, supplements, and health essentials straight to your home —
+          faster than ever.</p>
+        <div class="hero-ctas">
+          <% if (user) { %>
+            <a href="/terminal" class="btn-primary">Open POS Terminal →</a>
+            <% } else { %>
+              <a href="/login" class="btn-primary">Get Started →</a>
+              <% } %>
+                <a href="#products" class="btn-ghost">Browse Products</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="big-pill">
+          <div class="half-top"></div>
+          <div class="divider"></div>
+          <div class="half-bot"></div>
+        </div>
+        <div class="pill-stats">
+          <div class="pill-stat">
+            <div class="val">
+              <%= products.length %>+
+            </div>
+            <div class="lbl">Products</div>
+          </div>
+          <div class="pill-stat">
+            <div class="val">2 hrs</div>
+            <div class="lbl">Avg Delivery</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="trust-bar">
+    <div class="trust-inner">
+      <div class="trust-item"><span class="trust-icon">🏥</span>
+        <div class="trust-text"><strong>Licensed Pharmacy</strong><span>Govt. approved & certified</span></div>
+      </div>
+      <div class="trust-item"><span class="trust-icon">⚡</span>
+        <div class="trust-text"><strong>Express Delivery</strong><span>Within 2 hours in Dhaka</span></div>
+      </div>
+      <div class="trust-item"><span class="trust-icon">💊</span>
+        <div class="trust-text"><strong>100% Genuine</strong><span>Direct from manufacturers</span></div>
+      </div>
+      <div class="trust-item"><span class="trust-icon">👨‍⚕️</span>
+        <div class="trust-text"><strong>Free Consultation</strong><span>Talk to a pharmacist 24/7</span></div>
+      </div>
+      <div class="trust-item"><span class="trust-icon">🔄</span>
+        <div class="trust-text"><strong>Easy Returns</strong><span>Hassle-free 7-day policy</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section pb" id="products">
+    <div class="sec-head">
+      <h2>Our Products</h2>
+      <% if (user) { %><a href="/terminal" class="sec-link">Open POS Terminal →</a>
+        <% } %>
+    </div>
+    <div class="product-grid" id="homeProductGrid">
+      <% products.forEach(p=> { %>
+        <div class="product-card<%= p.highlight ? ' highlight' : '' %>" data-product-id="<%= p.id %>" data-name="<%= p.name.toLowerCase() %>" data-brand="<%= (p.brand||'').toLowerCase() %>" data-category="<%= (p.category||'').toLowerCase() %>" data-sub="<%= (p.sub||'').toLowerCase() %>">
+          <div class="product-img">
+            <% if (p.imagePath) { %>
+              <img src="<%= p.imagePath %>" alt="<%= p.name %>" />
+              <% } else { %>
+                <span class="product-icon-circle">
+                  <%= p.emoji || '💊' %>
+                </span>
+                <% } %>
+                  <% if (p.oldPrice) { %>
+                    <span class="badge sale">
+                      <%= Math.round((1 - p.price / p.oldPrice) * 100) %>% Off
+                    </span>
+                    <% } else if (p.highlight) { %>
+                      <span class="badge new">New</span>
+                      <% } %>
+                        <span class="badge corner-badge <%= p.badge === 'Rx' ? 'rx' : 'otc' %>">
+                          <%= p.badge || 'OTC' %>
+                        </span>
+          </div>
+          <div class="product-body">
+            <div class="product-brand">
+              <%= ((p.brand && p.brand.toLowerCase() !== 'generic' ? p.brand : '') || p.category || 'General').toUpperCase() %>
+            </div>
+            <div class="product-name">
+              <%= p.name %>
+            </div>
+            <% if (p.sub) { %>
+              <div class="product-sub">
+                <%= p.sub %>
+              </div>
+              <% } %>
+
+
+                <div class="price-row">
+                  <div class="price-group">
+                    <span class="price">৳ <%= p.price.toLocaleString() %></span>
+                    <% if (p.oldPrice) { %><span class="price-old">৳ <%= p.oldPrice.toLocaleString() %></span>
+                      <% } %>
+                  </div>
+                  <% if (user) { %>
+                    <form action="/cart/add" method="POST">
+                      <input type="hidden" name="productId" value="<%= p.id %>" />
+                      <button type="submit" class="add-btn">+</button>
+                    </form>
+                    <% } else { %>
+                      <a href="/login" class="add-btn-link">ADD</a>
+                      <% } %>
+                </div>
+          </div>
+        </div>
+        <% }) %>
+    </div>
+    <div class="no-results" id="homeNoResults" style="display:none;">
+      <span>🔍</span>
+      <p>No products match your search.</p>
+    </div>
+  </div>
+
+
+
+  <section class="how-section">
+    <div class="how-inner">
+      <h2>How MedPlus Works</h2>
+      <p>Getting your medicines has never been this simple.</p>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">🔍</div>
+          <h4>Search & Browse</h4>
+          <p>Find medicines from our growing catalog.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">🛒</div>
+          <h4>Add to Cart</h4>
+          <p>Add items at the POS terminal instantly.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">💳</div>
+          <h4>Secure Checkout</h4>
+          <p>Pay via bKash, Nagad, card, or cash on delivery.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">🚴</div>
+          <h4>Fast Delivery</h4>
+          <p>Track your order — delivered under 2 hours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <script>
+    function renderHomeProducts(products) {
+      const grid = document.getElementById('homeProductGrid');
+      if (!grid) return;
+      const isLoggedIn = <%= user ? 'true' : 'false' %>;
+      grid.innerHTML = products.map(p => {
+        const discountPct = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+        const brandLabel = ((p.brand && p.brand.toLowerCase() !== 'generic' ? p.brand : '') || p.category || 'General').toUpperCase();
+        return `
+        <div class="product-card${p.highlight ? ' highlight' : ''}" data-product-id="${p.id}" data-name="${(p.name || '').toLowerCase()}" data-brand="${(p.brand || '').toLowerCase()}" data-category="${(p.category || '').toLowerCase()}" data-sub="${(p.sub || '').toLowerCase()}">
+          <div class="product-img">
+            ${p.imagePath
+              ? `<img src="${p.imagePath}" alt="${p.name}" />`
+              : `<span class="product-icon-circle">${p.emoji || '💊'}</span>`}
+            ${p.oldPrice ? `<span class="badge sale">${discountPct}% Off</span>` : (p.highlight ? '<span class="badge new">New</span>' : '')}
+            <span class="badge corner-badge ${p.badge === 'Rx' ? 'rx' : 'otc'}">${p.badge || 'OTC'}</span>
+          </div>
+          <div class="product-body">
+            <div class="product-brand">${brandLabel}</div>
+            <div class="product-name">${p.name}</div>
+            ${p.sub ? `<div class="product-sub">${p.sub}</div>` : ''}
+            <div class="price-row">
+              <div class="price-group">
+                <span class="price">৳ ${Number(p.price).toLocaleString()}</span>
+                ${p.oldPrice ? `<span class="price-old">৳ ${Number(p.oldPrice).toLocaleString()}</span>` : ''}
+              </div>
+              ${isLoggedIn
+                ? `<form action="/cart/add" method="POST">
+                    <input type="hidden" name="productId" value="${p.id}" />
+                    <button type="submit" class="add-btn">+</button>
+                  </form>`
+                : `<a href="/login" class="add-btn-link">ADD</a>`}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function refreshHomeProducts() {
+      try {
+        const res = await fetch('/api/products');
+        const products = await res.json();
+        renderHomeProducts(products);
+        // Update product count in hero
+        const countEl = document.querySelector('.pill-stat .val');
+        if (countEl) countEl.textContent = products.length + '+';
+      } catch (err) {
+        console.error('Home refresh failed:', err);
+      }
+    }
+
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'REFRESH_DATA') {
+          refreshHomeProducts();
+        }
+      } catch (err) {
+        console.error('WS parse error:', err);
+      }
+    };
+  </script>
+
+  <%- include('partials/footer') %>
